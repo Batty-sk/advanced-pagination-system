@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   DataTable,
   DataTableSelectionMultipleChangeEvent,
   DataTableValueArray,
 } from "primereact/datatable";
 import { Paginator, PaginatorPageChangeEvent } from "primereact/paginator";
+import { OverlayPanel } from 'primereact/overlaypanel';
+
 import { Column } from "primereact/column";
 
 interface apiDataInterface {
@@ -23,14 +25,19 @@ const App = () => {
     null
   );
   const [apiData, updateApiData] = useState<apiDataInterface[]>();
-  const [pgNo, updatepgNo] = useState<number>(0);
   const [filterCount, updateFilterCount] = useState<{
     start: number;
     count: number;
     visted:Map<number,boolean>
   }>();
-  const [filterValue,updateFilterValue] = useState<number>(0)
-  const [rows, setRows] = useState<number>(10);
+
+const op = useRef<OverlayPanel>(null);
+
+const inputRowsRef = useRef<HTMLInputElement | null>(null);
+
+  //paginations component props...
+  const [pgNo, updatepgNo] = useState<number>(0);
+  const [rows, setRows] = useState<number>(10); // its for the pagination...
 
   useEffect(() => {
     updateLoading(true);
@@ -76,15 +83,14 @@ const App = () => {
         filterCount.visted.set(pgNo,true);
       }
     }
-    else{
-      console.log('selected selectedRows',selectedRows)
-    }
-  }, [apiData,filterCount]);
 
-  const onPageChange = (event: PaginatorPageChangeEvent) => {
-    console.log("event page ", event.first);
+  }, [apiData,filterCount?.count]);
+
+  const handlePageChange = (event: PaginatorPageChangeEvent) => {
+    console.log("event page ", event.page);
     setRows(event.rows);
     updatepgNo(event.page);
+
   };
   const handleRowSelection = (
     event: DataTableSelectionMultipleChangeEvent<apiDataInterface[]>
@@ -93,27 +99,33 @@ const App = () => {
       "map",
       event.value!.map((x) => ({ id: x.id }))
     );
-    updateSelectedRows(event.value!.map((x) => ({ id: x.id })));
+    updateSelectedRows( event.value!.map((x) => ({ id: x.id })));
   };
 
-  const handleApplyFilter = (filterCount: number) => {  //20
-      updateFilterCount({ start: pgNo, count: filterCount,visted:new Map() });
+  const handleApplyFilter = (rCount: number) => {  //20
+      updateFilterCount({ start: pgNo, count: rCount,visted:
+        filterCount?.start == pgNo?filterCount.visted:
+        new Map()});
   
   };
   return (
     <main className="text-3xl font-bold w-full min-h-svh bg-[#f5ebe0]  text-black flex flex-col justify-center items-center font-mono ">
       <h1>Advanced Pagination </h1>
-      <div className=" mt-3 text-2xl min-w-96 w-11/12 shadow-md shadow-black">
+      <div className=" mt-3 text-2xl min-w-96 w-11/12 shadow-md shadow-black relative">
+      {loading && 
+      <div className="absolute z-10 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+      <i className="pi pi-spin pi-spinner" style={{ fontSize: '2.4rem' }}></i>
+      </div>}
         <DataTable
-          value={apiData}  
-          className="border min-w-96 w-full min-h-40 max-h-96 overflow-y-auto p-4 bg-[#e3d5ca] border-black"
-          loading={loading}
+          value={loading?[]:apiData}  
+          className="border min-w-96 w-full min-h-40 h-[36rem] overflow-y-auto p-4 bg-[#e3d5ca] border-black"
           selectionMode={"multiple"}
           selection={selectedRows!}
           onSelectionChange={handleRowSelection}
           dataKey="id"
           rowHover={true}
         >
+
           <Column
             selectionMode="multiple"
             headerStyle={{ width: "3rem" }}
@@ -122,8 +134,27 @@ const App = () => {
             field="title"
             header={
               <div className="flex justify-between items-center">
-                <span className="me-4">?</span>
-                <h3>Title</h3>
+<i className="pi pi-chevron-down me-4 cursor-pointer" style={{ fontSize: '2rem' }}  onClick={(e) => {
+  if(op){
+    op.current?.toggle(e)
+  }
+}}>
+</i>
+<OverlayPanel ref={op}>
+      <div className=" w-48 h-28 flex flex-col items-center justify-around bg-[#edede9] p-5">
+          <input type="number" placeholder="Enter Number of rows.." className="outline" ref={inputRowsRef} />
+          <button className="border bg-white px-4 text-black py-1 " onClick={()=>{
+            if(inputRowsRef)
+            {
+              handleApplyFilter(inputRowsRef.current?.value?+inputRowsRef.current.value:0)
+            }
+          }}>
+            Submit
+          </button>
+
+      </div>
+            </OverlayPanel>
+<h3>Title</h3>
               </div>
             }
             className="text-[0.9rem] font-normal  cursor-pointer w-80 overflow-clip "
@@ -141,33 +172,30 @@ const App = () => {
           <Column
             field="inscriptions"
             header="Inscriptions"
-            className="text-[0.9rem] font-normal  cursor-pointer overflow-clip "
+            className="text-[0.9rem] font-normal  cursor-pointer max-w-2xl overflow-hidden"
             body={(rowData) => rowData.inscriptions || "None"}
           ></Column>
           <Column
             field="date_start"
             header="Date start"
-            className="text-[0.9rem] font-normal  cursor-pointer overflow-clip "
+            className="text-[0.9rem] font-normal  cursor-pointer"
           ></Column>
           <Column
             field="date_end"
             header="Date end"
-            className="text-[0.9rem] font-normal  cursor-pointer overflow-clip "
+            className="text-[0.9rem] font-normal  cursor-pointer "
           ></Column>
         </DataTable>
         <Paginator
-          first={pgNo}
+          first={pgNo*10}
           rows={rows}
           totalRecords={100}
-          onPageChange={onPageChange}
+          onPageChange={handlePageChange}
           className="flex items-center justify-center space-x-3"
+        
         />
       </div>
 
-      <input type="number" value={filterValue} onChange={x=>updateFilterValue(+x.currentTarget.value)}/>
-      <button onClick={()=>{
-        handleApplyFilter(filterValue)
-      }} >Apply Filter</button>
     </main>
   );
 };
