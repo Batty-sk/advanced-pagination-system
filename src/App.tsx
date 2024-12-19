@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import  { useEffect, useRef, useState } from "react";
 import {
   DataTable,
   DataTableSelectionMultipleChangeEvent,
-  DataTableValueArray,
 } from "primereact/datatable";
 import { Paginator, PaginatorPageChangeEvent } from "primereact/paginator";
 import { OverlayPanel } from 'primereact/overlaypanel';
@@ -129,7 +128,10 @@ const inputRowsRef = useRef<HTMLInputElement | null>(null);
           <Column
             selectionMode="multiple"
             headerStyle={{ width: "3rem" }}
-          ></Column>
+
+          />
+
+
           <Column
             field="title"
             header={
