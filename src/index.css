@@ -5,3 +5,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+.p-paginator-page {
+  margin: 0 8px;
+  width: 20px;
+  padding: 10px;
+}
+.p-paginator-page:hover{
+  background-color: bisque;
+}
