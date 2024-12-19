@@ -27,6 +27,7 @@ const App = () => {
   const [filterCount, updateFilterCount] = useState<{
     start: number;
     count: number;
+    visted:Map<number,boolean>
   }>();
   const [filterValue,updateFilterValue] = useState<number>(0)
   const [rows, setRows] = useState<number>(10);
@@ -63,14 +64,20 @@ const App = () => {
 
   useEffect(() => {
     if (filterCount?.count && pgNo >= filterCount.start) {
+      if(filterCount.visted.has(pgNo))
+          return
       const diff = (pgNo - filterCount.start) * 12; // 2-1 = 1*12 =12
       console.log("diff", diff,filterCount,pgNo)
       const remainingCount = filterCount.count - diff; //20 - 12 = 8
         console.log("remaining count",remainingCount)
       if (remainingCount > 0 && apiData) {
         const sliceCount = Math.min(remainingCount, 12);
-        updateSelectedRows(apiData.slice(0, sliceCount).map(x => ({ id: x.id })));
+        updateSelectedRows(prev=>[...(prev||[]),...apiData.slice(0, sliceCount).map(x => ({ id: x.id }))]);
+        filterCount.visted.set(pgNo,true);
       }
+    }
+    else{
+      console.log('selected selectedRows',selectedRows)
     }
   }, [apiData,filterCount]);
 
@@ -90,7 +97,7 @@ const App = () => {
   };
 
   const handleApplyFilter = (filterCount: number) => {  //20
-      updateFilterCount({ start: pgNo, count: filterCount });
+      updateFilterCount({ start: pgNo, count: filterCount,visted:new Map() });
   
   };
   return (
